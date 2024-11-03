@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Recommendation Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom right, #6a11cb, #2575fc);
+            color: #fff;
+        } 
+        .chat-container {
+            width: 400px;
+            max-width: 100%;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            margin: 50px auto;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffdd57;
+        }
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        .user-input {
+            display: flex;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ffdd57;
+            border-radius: 5px;
+            margin-right: 5px;
+            font-size: 16px;
+            outline: none;
+            color: #333;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffdd57;
+            color: #333;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ffd700;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .user {
+            text-align: right;
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .bot {
+            text-align: left;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        #nowPlaying {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Music Recommendation Chatbot</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="user-input">
+            <input type="text" id="userInput" placeholder="Ask me something..." />
+            <button onclick="processInput()">Send</button>
+        </div>
+        <div id="nowPlaying"></div>
+    </div>
+    
+    <audio id="audioPlayer" controls style="display:none;">
+        <source id="audioSource" src="" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        const songs_db = [
+            // Happy songs
+            { title: "Happy Song 1", artist: "alesso", emotions: ["happy"], filename: "happy_song_1.mp3" },
+            { title: "Happy Song 2", artist: "drake", emotions: ["happy"], filename: "happy_song_2.mp3" },
+            { title: "Happy Song 3", artist: "willow smith", emotions: ["happy"], filename: "happy_song_3.mp3" },
+            { title: "Happy Song 4", artist: "brooks", emotions: ["happy"], filename: "happy_song_4.mp3" },
+            { title: "Happy Song 5", artist: "coi leray", emotions: ["happy"], filename: "happy_song_5.mp3" },
+            // Sad songs
+            { title: "Sad Melody 1", artist: "lana del ray", emotions: ["sad"], filename: "sad_song_1.mp3" },
+            { title: "Sad Melody 2", artist: "arctic monkeys", emotions: ["sad"], filename: "sad_song_2.mp3" },
+            { title: "Sad Melody 3", artist: "zayn malik", emotions: ["sad"], filename: "sad_song_3.mp3" },
+            { title: "Sad Melody 4", artist: "billie elish", emotions: ["sad"], filename: "sad_song_4.mp3" },
+            { title: "Sad Melody 5", artist: "madonna", emotions: ["sad"], filename: "sad_song_5.mp3" },
+            // Relaxed songs
+            { title: "Chill Vibes 1", artist: "elley dune", emotions: ["relaxed"], filename: "relaxed_song_1.mp3" },
+            { title: "Chill Vibes 2", artist: "jaymes young", emotions: ["relaxed"], filename: "relaxed_song_2.mp3" },
+            { title: "Chill Vibes 3", artist: "gym class", emotions: ["relaxed"], filename: "relaxed_song_3.mp3" },
+            { title: "Chill Vibes 4", artist: "micheal buble", emotions: ["relaxed"], filename: "relaxed_song_4.mp3" },
+            { title: "Chill Vibes 5", artist: "sia", emotions: ["relaxed"], filename: "relaxed_song_5.mp3" },
+            // Excited songs
+            { title: "Exciting Beat 1", artist: "justin bieber", emotions: ["excited"], filename: "excited_song_1.mp3" },
+            { title: "Exciting Beat 2", artist: "tones and i", emotions: ["excited"], filename: "excited_song_2.mp3" },
+            { title: "Exciting Beat 3", artist: "dharia", emotions: ["excited"], filename: "excited_song_3.mp3" },
+            { title: "Exciting Beat 4", artist: "aya nakamura", emotions: ["excited"], filename: "excited_song_4.mp3" },
+            { title: "Exciting Beat 5", artist: "krs one", emotions: ["excited"], filename: "excited_song_5.mp3" },
+            // Calm songs
+            { title: "Calm Breeze 1", artist: "ed sheeran", emotions: ["calm"], filename: "calm_song_1.mp3" },
+            { title: "Calm Breeze 2", artist: "aurora", emotions: ["calm"], filename: "calm_song_2.mp3" },
+            { title: "Calm Breeze 3", artist: "justin bieber", emotions: ["calm"], filename: "calm_song_3.mp3" },
+            { title: "Calm Breeze 4", artist: "alan walker", emotions: ["calm"], filename: "calm_song_4.mp3" },
+            { title: "Calm Breeze 5", artist: "pham", emotions: ["calm"], filename: "calm_song_5.mp3" },
+            // Angry songs
+            { title: "Angry Anthem 1", artist: "hanumankind", emotions: ["angry"], filename: "angry_song_1.mp3" },
+            { title: "Angry Anthem 2", artist: "roddy ricch", emotions: ["angry"], filename: "angry_song_2.mp3" },
+            { title: "Angry Anthem 3", artist: "neoni", emotions: ["angry"], filename: "angry_song_3.mp3" },
+            { title: "Angry Anthem 4", artist: "sickick", emotions: ["angry"], filename: "angry_song_4.mp3" },
+            { title: "Angry Anthem 5", artist: "micheal buble", emotions: ["angry"], filename: "angry_song_5.mp3" }
+        ];
+
+        let currentSongIndex = -1;
+        let currentSongs = [];
+
+        function appendMessage(sender, text) {
+            const chatBox = document.getElementById("chatBox");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", sender);
+            messageDiv.textContent = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+        }
+
+        function recognizeGreeting(input) {
+            const greetings = [
+                { phrases: ["hi", "hello", "hey"], response: "Hello! How can I assist you today?" },
+                { phrases: ["good morning", "morning"], response: "Good morning! What would you like to listen to?" },
+                { phrases: ["good afternoon", "afternoon"], response: "Good afternoon! I'm here to help you with music." },
+                { phrases: ["good evening", "evening"], response: "Good evening! Looking for some tunes?" },
+                { phrases: ["how are you", "how's it going"], response: "I'm just a bot, but I'm excited to help you!" }
+            ];
+
+            for (let greeting of greetings) {
+                if (greeting.phrases.some(phrase => input.includes(phrase))) {
+                    return greeting.response;
+                }
+            }
+            return null; // No greeting recognized
+        }
+
+        function getSongs(moods) {
+            currentSongs = songs_db.filter(song => song.emotions.some(emotion => moods.includes(emotion)));
+            // Ensure at least 5 songs are suggested
+            if (currentSongs.length < 5) {
+                const additionalSongs = songs_db.filter(song => !moods.includes(song.emotions[0]));
+                currentSongs = currentSongs.concat(additionalSongs.slice(0, 5 - currentSongs.length));
+            }
+            currentSongIndex = -1; // Reset index
+
+            if (currentSongs.length === 0) {
+                appendMessage("bot", "No songs found for that mood. Try another mood.");
+            } else {
+                appendMessage("bot", "Here are some song suggestions:");
+                currentSongs.forEach((song, index) => {
+                    appendMessage("bot", `${song.title} by ${song.artist} [Type "play ${index}" to listen]`);
+                });
+            }
+        }
+
+        function processInput() {
+            const inputText = document.getElementById("userInput").value.toLowerCase().trim();
+            appendMessage("user", inputText);
+            document.getElementById("userInput").value = ""; // Clear input
+
+            // Check for greetings first
+            const greetingResponse = recognizeGreeting(inputText);
+            if (greetingResponse) {
+                appendMessage("bot", greetingResponse);
+                return; // Exit if a greeting was recognized
+            }
+
+            if (inputText.includes("play")) {
+                const playCommand = inputText.match(/play (\d+)/);
+                if (playCommand) {
+                    const songIndex = parseInt(playCommand[1]);
+                    if (songIndex >= 0 && songIndex < currentSongs.length) {
+                        playSong(songIndex);
+                    } else {
+                        appendMessage("bot", "Invalid song number. Please try again.");
+                    }
+                } else {
+                    appendMessage("bot", "To play a song, type 'play' followed by the song number.");
+                }
+            } else {
+                const moods = inputText.split(',').map(mood => mood.trim());
+                if (moods.length > 0) {
+                    getSongs(moods);
+                } else {
+                    respondToQuestion(inputText);
+                }
+            }
+        }
+
+        function respondToQuestion(question) {
+            const lowerQuestion = question.toLowerCase();
+            if (lowerQuestion.includes("suggest songs") || lowerQuestion.includes("what songs")) {
+                appendMessage("bot", "Please specify your mood for suggestions.");
+            } else if (lowerQuestion.includes("mood")) {
+                appendMessage("bot", "I suggest moods like happy, sad, relaxed, excited, calm, or angry.");
+            } else if (lowerQuestion.includes("thank you") || lowerQuestion.includes("thanks")) {
+                appendMessage("bot", "You're welcome! Let me know if you need anything else.");
+            } else {
+                appendMessage("bot", "I didn't quite catch that. Ask me for song suggestions based on a mood.");
+            }
+        }
+
+        function playSong(index) {
+            currentSongIndex = index;
+            const song = currentSongs[currentSongIndex];
+            
+            <!-- const audioPlayer = new Audio('song.mp3'); -->
+            const audioPlayer = document.getElementById("audioPlayer");
+            const audioSource = document.getElementById("audioSource");
+            
+            audioSource.src = song.filename;
+            audioPlayer.style.display = "block";
+            audioPlayer.load();
+
+            audioPlayer.play().catch(error => {
+                console.error("Error playing audio:", error);
+                appendMessage("bot", "Failed to play the audio. Please try again.");
+            });
+
+            document.getElementById("nowPlaying").textContent = `Now playing: ${song.title} by ${song.artist}`;
+            appendMessage("bot", `Now playing: ${song.title} by ${song.artist}`);
+        }
+    </script>
+</body>
+</html>
